@@ -12,6 +12,7 @@ from typing import List, Optional
 from datetime import datetime
 
 from src.config import get_config, Config
+from src.auth import validate_startup_credentials
 from src.agents.coordinator import CoordinatorAgent, ProgressEvent, AnalysisResult
 from src.models.maintenance import MaintenanceSuggestion
 from src.models.session import UserPreferences
@@ -483,12 +484,15 @@ def run_analysis(args: argparse.Namespace) -> int:
         log_level = args.log_level if hasattr(args, 'log_level') and args.log_level else config.log_level
         setup_logging(log_level)
         
-        # Validate GitHub token
-        if not config.validate_github_token():
-            print_error("GitHub token appears invalid (should be 40+ characters)")
-            print_info("Please check your GITHUB_TOKEN environment variable")
+        # Validate credentials on startup
+        print_info("Validating credentials...")
+        is_valid, error_message = validate_startup_credentials(config)
+        if not is_valid:
+            print_error("Credential validation failed:")
+            print_error(error_message)
             return 1
         
+        print_success("Credentials validated successfully")
         print_success("Configuration loaded successfully")
         
         # Parse filters and preferences
