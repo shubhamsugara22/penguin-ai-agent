@@ -3,7 +3,7 @@
 import logging
 import time
 from typing import List, Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 import re
 
 from .github_client import GitHubClient, RepositoryNotFoundError, GitHubAPIError
@@ -19,7 +19,7 @@ class RepositoryFilters:
     
     def __init__(
         self,
-        updated_after: Optional[datetime] = None,
+        updated_after: Optional[str] = None,
         language: Optional[str] = None,
         visibility: Optional[str] = None,
         archived: bool = False
@@ -27,12 +27,33 @@ class RepositoryFilters:
         """Initialize repository filters.
         
         Args:
-            updated_after: Only include repos updated after this date
+            updated_after: Only include repos updated after this date (YYYY-MM-DD string or datetime)
             language: Filter by primary language
             visibility: Filter by visibility (public, private, all)
             archived: Include archived repositories
         """
-        self.updated_after = updated_after
+        # Convert string date to datetime if needed
+        if isinstance(updated_after, str):
+            try:
+                # Parse date and make it timezone-aware (UTC) to match GitHub API dates
+                naive_dt = datetime.fromisoformat(updated_after)
+                # If no timezone info, assume UTC
+                if naive_dt.tzinfo is None:
+                    self.updated_after = naive_dt.replace(tzinfo=timezone.utc)
+                else:
+                    self.updated_after = naive_dt
+            except (ValueError, TypeError):
+                logger.warning(f"Invalid date format for updated_after: {updated_after}")
+                self.updated_after = None
+        elif isinstance(updated_after, datetime):
+            # Make sure datetime is timezone-aware
+            if updated_after.tzinfo is None:
+                self.updated_after = updated_after.replace(tzinfo=timezone.utc)
+            else:
+                self.updated_after = updated_after
+        else:
+            self.updated_after = updated_after
+            
         self.language = language
         self.visibility = visibility
         self.archived = archived
