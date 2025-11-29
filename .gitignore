@@ -56,4 +56,4 @@ logs/
 memory_bank/
 *.json.bak
 
-.github_maintainer_memory
+.github_maintainer_memory/*
