@@ -1,4 +1,4 @@
-# GitHub Maintainer Agent
+# Penguin AI agent (GitHub Maintainer Agent)
 
 AI-powered multi-agent system for GitHub repository maintenance using LangGraph, Google ADK, and Gemini LLM.
 
