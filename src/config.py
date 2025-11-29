@@ -16,6 +16,7 @@ class Config:
     
     github_token: str
     gemini_api_key: str
+    gemini_model: str = "gemini-2.0-flash-exp"
     log_level: str = "INFO"
     max_parallel_repos: int = 5
     github_api_base_url: str = "https://api.github.com"
@@ -48,6 +49,7 @@ class Config:
                 "See: https://ai.google.dev/tutorials/setup"
             )
         
+        gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp")
         log_level = os.getenv("LOG_LEVEL", "INFO").upper()
         max_parallel_repos = int(os.getenv("MAX_PARALLEL_REPOS", "5"))
         github_api_base_url = os.getenv("GITHUB_API_BASE_URL", "https://api.github.com")
@@ -55,6 +57,7 @@ class Config:
         return cls(
             github_token=github_token,
             gemini_api_key=gemini_api_key,
+            gemini_model=gemini_model,
             log_level=log_level,
             max_parallel_repos=max_parallel_repos,
             github_api_base_url=github_api_base_url,
@@ -78,6 +81,7 @@ class Config:
         return {
             "github_token": self._mask_token(self.github_token),
             "gemini_api_key": self._mask_token(self.gemini_api_key),
+            "gemini_model": self.gemini_model,
             "log_level": self.log_level,
             "max_parallel_repos": self.max_parallel_repos,
             "github_api_base_url": self.github_api_base_url,

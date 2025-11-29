@@ -1,0 +1,41 @@
+{
+  "repository": {
+    "name": "zulip",
+    "full_name": "zulip/zulip",
+    "owner": "zulip",
+    "url": "https://github.com/zulip/zulip",
+    "default_branch": "main",
+    "visibility": "public",
+    "created_at": "2015-09-25T16:37:25+00:00",
+    "updated_at": "2025-11-29T13:39:37+00:00"
+  },
+  "purpose": "A zulip project",
+  "tech_stack": [
+    "Python",
+    "TypeScript",
+    "JavaScript",
+    "CSS",
+    "HTML"
+  ],
+  "key_files": [
+    ".gitignore",
+    "CONTRIBUTING.md",
+    "Dockerfile-postgresql",
+    "LICENSE",
+    "README.md",
+    "package.json"
+  ],
+  "health": {
+    "activity_level": "moderate",
+    "test_coverage": "none",
+    "documentation_quality": "excellent",
+    "ci_cd_status": "configured",
+    "dependency_status": "unknown",
+    "overall_health_score": 0.66,
+    "issues_identified": [
+      "No tests detected"
+    ]
+  },
+  "last_analyzed": "2025-11-29T21:10:17.792810",
+  "analysis_version": "1.0.0"
+}

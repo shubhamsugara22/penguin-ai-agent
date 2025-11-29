@@ -1,0 +1,50 @@
+[
+  {
+    "id": "fa8b5c33a78b0361",
+    "repository": {
+      "name": "shubhamsugara22",
+      "full_name": "shubhamsugara22/shubhamsugara22",
+      "owner": "shubhamsugara22",
+      "url": "https://github.com/shubhamsugara22/shubhamsugara22",
+      "default_branch": "main",
+      "visibility": "public",
+      "created_at": "2022-01-12T07:47:08+00:00",
+      "updated_at": "2025-11-20T19:42:14+00:00"
+    },
+    "category": "enhancement",
+    "priority": "high",
+    "title": "Set up CI/CD pipeline",
+    "description": "Configure GitHub Actions (or similar) to automatically run tests, linting, and other checks on every commit and pull request.",
+    "rationale": "Automated CI/CD ensures code quality and catches issues before they reach production.",
+    "estimated_effort": "medium",
+    "labels": [
+      "ci-cd",
+      "enhancement",
+      "automation"
+    ]
+  },
+  {
+    "id": "2472a446035a0b68",
+    "repository": {
+      "name": "shubhamsugara22",
+      "full_name": "shubhamsugara22/shubhamsugara22",
+      "owner": "shubhamsugara22",
+      "url": "https://github.com/shubhamsugara22/shubhamsugara22",
+      "default_branch": "main",
+      "visibility": "public",
+      "created_at": "2022-01-12T07:47:08+00:00",
+      "updated_at": "2025-11-20T19:42:14+00:00"
+    },
+    "category": "enhancement",
+    "priority": "high",
+    "title": "Add test suite",
+    "description": "Create a comprehensive test suite to ensure code quality and prevent regressions. Include unit tests for core functionality and integration tests for key workflows.",
+    "rationale": "Tests are essential for maintaining code quality and catching bugs early.",
+    "estimated_effort": "large",
+    "labels": [
+      "testing",
+      "enhancement",
+      "good-first-issue"
+    ]
+  }
+]

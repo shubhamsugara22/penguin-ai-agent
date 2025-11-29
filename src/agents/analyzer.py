@@ -67,9 +67,9 @@ class AnalyzerAgent:
         # Initialize Gemini
         config = get_config()
         genai.configure(api_key=config.gemini_api_key)
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        self.model = genai.GenerativeModel(config.gemini_model)
         
-        logger.info("Analyzer Agent initialized")
+        logger.info(f"Analyzer Agent initialized with model: {config.gemini_model}")
     
     def analyze_repository(self, repo: Repository) -> RepositoryAnalysis:
         """Analyze a single repository.
@@ -380,8 +380,10 @@ class AnalyzerAgent:
         Returns:
             Compact context dictionary
         """
-        # Calculate days since last commit
-        days_since_commit = (datetime.now() - history.last_commit_date).days
+        # Calculate days since last commit (use timezone-aware datetime)
+        from datetime import timezone
+        now = datetime.now(timezone.utc)
+        days_since_commit = (now - history.last_commit_date).days
         
         # Get top languages
         top_languages = sorted(
@@ -528,8 +530,10 @@ Respond with ONLY the JSON object, no additional text."""
         """
         logger.info("Using fallback health assessment")
         
-        # Determine activity level
-        days_since_commit = (datetime.now() - history.last_commit_date).days
+        # Determine activity level (use timezone-aware datetime)
+        from datetime import timezone
+        now = datetime.now(timezone.utc)
+        days_since_commit = (now - history.last_commit_date).days
         if days_since_commit < 30:
             activity_level = "active"
         elif days_since_commit < 90:

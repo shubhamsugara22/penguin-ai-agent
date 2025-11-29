@@ -1,0 +1,26 @@
+[
+  {
+    "id": "7fd74b97dc850cdd",
+    "repository": {
+      "name": "penguin-ai-agent",
+      "full_name": "shubhamsugara22/penguin-ai-agent",
+      "owner": "shubhamsugara22",
+      "url": "https://github.com/shubhamsugara22/penguin-ai-agent",
+      "default_branch": "main",
+      "visibility": "public",
+      "created_at": "2025-11-28T19:42:50+00:00",
+      "updated_at": "2025-11-29T14:33:17+00:00"
+    },
+    "category": "enhancement",
+    "priority": "high",
+    "title": "Set up CI/CD pipeline",
+    "description": "Configure GitHub Actions (or similar) to automatically run tests, linting, and other checks on every commit and pull request.",
+    "rationale": "Automated CI/CD ensures code quality and catches issues before they reach production.",
+    "estimated_effort": "medium",
+    "labels": [
+      "ci-cd",
+      "enhancement",
+      "automation"
+    ]
+  }
+]

@@ -1,0 +1,40 @@
+{
+  "repository": {
+    "name": "fastapi",
+    "full_name": "shubhamsugara22/fastapi",
+    "owner": "shubhamsugara22",
+    "url": "https://github.com/shubhamsugara22/fastapi",
+    "default_branch": "master",
+    "visibility": "public",
+    "created_at": "2025-06-21T04:58:37+00:00",
+    "updated_at": "2025-08-19T19:18:10+00:00"
+  },
+  "purpose": "A fastapi project",
+  "tech_stack": [
+    "Python",
+    "JavaScript",
+    "Shell",
+    "HTML",
+    "CSS"
+  ],
+  "key_files": [
+    ".gitignore",
+    "CONTRIBUTING.md",
+    "LICENSE",
+    "README.md",
+    "requirements.txt"
+  ],
+  "health": {
+    "activity_level": "stale",
+    "test_coverage": "good",
+    "documentation_quality": "excellent",
+    "ci_cd_status": "configured",
+    "dependency_status": "unknown",
+    "overall_health_score": 0.8200000000000001,
+    "issues_identified": [
+      "Repository is stale (last commit 102 days ago)"
+    ]
+  },
+  "last_analyzed": "2025-11-29T21:10:18.227491",
+  "analysis_version": "1.0.0"
+}

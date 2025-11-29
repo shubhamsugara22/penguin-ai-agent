@@ -45,9 +45,9 @@ class MaintainerAgent:
         # Initialize Gemini
         config = get_config()
         genai.configure(api_key=config.gemini_api_key)
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        self.model = genai.GenerativeModel(config.gemini_model)
         
-        logger.info("Maintainer Agent initialized")
+        logger.info(f"Maintainer Agent initialized with model: {config.gemini_model}")
     
     def generate_suggestions(
         self,

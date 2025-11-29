@@ -46,6 +46,12 @@ Required environment variables:
 - `GITHUB_TOKEN`: Your GitHub personal access token ([create one](https://github.com/settings/tokens))
 - `GEMINI_API_KEY`: Your Google AI Studio API key ([get one](https://ai.google.dev/tutorials/setup))
 
+Optional environment variables:
+- `GEMINI_MODEL`: Gemini model to use (default: `gemini-2.0-flash-exp`)
+  - Supported models: `gemini-2.0-flash-exp`, `gemini-1.5-flash`, `gemini-1.5-pro`
+- `LOG_LEVEL`: Logging level (default: `INFO`)
+- `MAX_PARALLEL_REPOS`: Maximum parallel repository analyses (default: `5`)
+
 ### Development Setup
 
 For development with additional tools:
