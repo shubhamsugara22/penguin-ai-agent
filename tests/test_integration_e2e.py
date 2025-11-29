@@ -118,7 +118,7 @@ class TestEndToEndIntegration:
     def test_maintainer_initialization(self, mock_config):
         """Test that Maintainer Agent can be initialized."""
         with patch('src.agents.maintainer.get_config', return_value=mock_config):
-            memory_bank = MemoryBank(memory_dir=".test_memory")
+            memory_bank = MemoryBank(storage_dir=".test_memory")
             maintainer = MaintainerAgent(memory_bank=memory_bank)
             
             assert maintainer is not None
@@ -183,7 +183,7 @@ class TestEndToEndIntegration:
         with patch('src.agents.maintainer.get_config', return_value=mock_config), \
              patch('src.agents.maintainer.genai'):
             
-            memory_bank = MemoryBank(memory_dir=".test_memory")
+            memory_bank = MemoryBank(storage_dir=".test_memory")
             maintainer = MaintainerAgent(memory_bank=memory_bank)
             
             # Generate suggestions using fallback (no LLM call)
@@ -215,7 +215,7 @@ class TestEndToEndIntegration:
         with patch('src.agents.maintainer.get_config', return_value=mock_config), \
              patch('src.agents.maintainer.genai'):
             
-            memory_bank = MemoryBank(memory_dir=".test_memory")
+            memory_bank = MemoryBank(storage_dir=".test_memory")
             maintainer = MaintainerAgent(memory_bank=memory_bank)
             
             # Generate suggestions
@@ -322,7 +322,7 @@ class TestEndToEndIntegration:
     
     def test_memory_bank_operations(self, mock_config):
         """Test memory bank CRUD operations."""
-        memory_bank = MemoryBank(memory_dir=".test_memory")
+        memory_bank = MemoryBank(storage_dir=".test_memory")
         
         # Create test profile
         repo = Repository(
@@ -357,10 +357,10 @@ class TestEndToEndIntegration:
         )
         
         # Save profile
-        memory_bank.save_profile(profile)
+        memory_bank.save_repository_profile(profile)
         
         # Load profile
-        loaded = memory_bank.load_profile(repo.full_name)
+        loaded = memory_bank.load_repository_profile(repo.full_name)
         
         assert loaded is not None
         assert loaded.repository.full_name == repo.full_name
@@ -368,7 +368,7 @@ class TestEndToEndIntegration:
     
     def test_user_preferences_persistence(self, mock_config):
         """Test that user preferences are persisted correctly."""
-        memory_bank = MemoryBank(memory_dir=".test_memory")
+        memory_bank = MemoryBank(storage_dir=".test_memory")
         
         # Create preferences
         preferences = UserPreferences(
@@ -380,10 +380,10 @@ class TestEndToEndIntegration:
         )
         
         # Save preferences
-        memory_bank.save_preferences(preferences)
+        memory_bank.save_user_preferences(preferences)
         
         # Load preferences
-        loaded = memory_bank.load_preferences("test-user")
+        loaded = memory_bank.load_user_preferences("test-user")
         
         assert loaded is not None
         assert loaded.user_id == "test-user"
