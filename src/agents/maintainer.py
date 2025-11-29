@@ -500,9 +500,9 @@ Respond with ONLY the JSON object, no additional text."""
             effort = effort_scores.get(suggestion.estimated_effort, 1)
             category = category_scores.get(suggestion.category, 1)
             
-            # Score = (priority * 2 + category) / effort
+            # Score = (priority + category * 2) * effort
             # Higher priority and category, lower effort = higher score
-            return (priority * 2 + category) / effort
+            return (priority + category * 2) * effort
         
         # Sort by score (descending)
         sorted_suggestions = sorted(

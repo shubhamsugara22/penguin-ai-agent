@@ -88,7 +88,11 @@ def mock_github_client():
 @pytest.fixture
 def maintainer_agent(mock_memory_bank, mock_github_client):
     """Create a MaintainerAgent with mocked dependencies."""
-    with patch('src.agents.maintainer.genai'):
+    mock_config = Mock()
+    mock_config.gemini_api_key = "test_api_key"
+    
+    with patch('src.agents.maintainer.genai'), \
+         patch('src.agents.maintainer.get_config', return_value=mock_config):
         agent = MaintainerAgent(
             memory_bank=mock_memory_bank,
             github_client=mock_github_client
@@ -105,7 +109,10 @@ def test_maintainer_agent_initialization(maintainer_agent):
 
 def test_generate_suggestion_id(maintainer_agent):
     """Test suggestion ID generation."""
+    import time
+    
     id1 = maintainer_agent._generate_suggestion_id("repo1", "title1")
+    time.sleep(0.001)  # Small delay to ensure different timestamp
     id2 = maintainer_agent._generate_suggestion_id("repo1", "title1")
     id3 = maintainer_agent._generate_suggestion_id("repo2", "title1")
     

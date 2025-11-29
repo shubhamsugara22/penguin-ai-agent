@@ -17,11 +17,11 @@ class CredentialSanitizer:
     
     # Patterns for common token formats
     TOKEN_PATTERNS = [
-        re.compile(r'ghp_[a-zA-Z0-9]{36,}'),  # GitHub personal access tokens
-        re.compile(r'gho_[a-zA-Z0-9]{36,}'),  # GitHub OAuth tokens
-        re.compile(r'ghs_[a-zA-Z0-9]{36,}'),  # GitHub server tokens
-        re.compile(r'github_pat_[a-zA-Z0-9_]{82}'),  # GitHub fine-grained tokens
-        re.compile(r'AIza[a-zA-Z0-9_-]{35}'),  # Google API keys
+        re.compile(r'ghp_[a-zA-Z0-9]{6,}'),  # GitHub personal access tokens
+        re.compile(r'gho_[a-zA-Z0-9]{6,}'),  # GitHub OAuth tokens
+        re.compile(r'ghs_[a-zA-Z0-9]{6,}'),  # GitHub server tokens
+        re.compile(r'github_pat_[a-zA-Z0-9_]{22,}'),  # GitHub fine-grained tokens
+        re.compile(r'AIza[a-zA-Z0-9_-]{6,}'),  # Google API keys
         re.compile(r'Bearer\s+[a-zA-Z0-9\-._~+/]+=*'),  # Bearer tokens
     ]
     
@@ -35,6 +35,8 @@ class CredentialSanitizer:
         Returns:
             str: Text with tokens replaced by [REDACTED]
         """
+        if not isinstance(text, str):
+            return text
         sanitized = text
         for pattern in cls.TOKEN_PATTERNS:
             sanitized = pattern.sub('[REDACTED]', sanitized)
