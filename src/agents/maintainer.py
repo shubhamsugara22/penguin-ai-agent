@@ -5,6 +5,7 @@ prioritizes suggestions, handles deduplication, and creates GitHub issues.
 """
 
 import logging
+import time
 from typing import List, Optional
 from datetime import datetime
 import json
@@ -19,6 +20,7 @@ from ..memory.memory_bank import MemoryBank
 from ..tools.github_tools import create_issue
 from ..tools.github_client import GitHubClient
 from ..config import get_config
+from ..observability import get_metrics_collector
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +63,16 @@ class MaintainerAgent:
         Returns:
             List of MaintenanceSuggestion objects
         """
-        logger.info(f"Generating suggestions for {len(profiles)} repositories")
+        metrics = get_metrics_collector()
+        
+        logger.info(
+            f"Generating suggestions for {len(profiles)} repositories",
+            extra={
+                'agent': 'MaintainerAgent',
+                'event': 'generate_suggestions_start',
+                'extra_data': {'profile_count': len(profiles)}
+            }
+        )
         
         all_suggestions = []
         
@@ -69,7 +80,14 @@ class MaintainerAgent:
             try:
                 # Skip excluded repositories
                 if user_preferences and profile.repository.full_name in user_preferences.excluded_repos:
-                    logger.info(f"Skipping excluded repository: {profile.repository.full_name}")
+                    logger.info(
+                        f"Skipping excluded repository: {profile.repository.full_name}",
+                        extra={
+                            'agent': 'MaintainerAgent',
+                            'event': 'skip_excluded_repo',
+                            'repository': profile.repository.full_name
+                        }
+                    )
                     continue
                 
                 # Generate suggestions for this repository
@@ -81,20 +99,53 @@ class MaintainerAgent:
                     repo_suggestions
                 )
                 
+                # Record metrics for each suggestion
+                for suggestion in unique_suggestions:
+                    metrics.record_suggestion_generated(
+                        profile.repository.full_name,
+                        suggestion.category,
+                        suggestion.priority
+                    )
+                
                 all_suggestions.extend(unique_suggestions)
                 
                 logger.info(
-                    f"Generated {len(unique_suggestions)} unique suggestions for {profile.repository.full_name}"
+                    f"Generated {len(unique_suggestions)} unique suggestions for {profile.repository.full_name}",
+                    extra={
+                        'agent': 'MaintainerAgent',
+                        'event': 'repo_suggestions_generated',
+                        'repository': profile.repository.full_name,
+                        'metrics': {
+                            'suggestion_count': len(unique_suggestions),
+                            'duplicates_filtered': len(repo_suggestions) - len(unique_suggestions)
+                        }
+                    }
                 )
                 
             except Exception as e:
-                logger.error(f"Failed to generate suggestions for {profile.repository.full_name}: {e}")
+                metrics.record_error('suggestion_generation_error')
+                logger.error(
+                    f"Failed to generate suggestions for {profile.repository.full_name}: {e}",
+                    extra={
+                        'agent': 'MaintainerAgent',
+                        'event': 'generate_suggestions_error',
+                        'repository': profile.repository.full_name,
+                        'extra_data': {'error': str(e)}
+                    }
+                )
                 continue
         
         # Prioritize all suggestions
         prioritized = self.prioritize_suggestions(all_suggestions)
         
-        logger.info(f"Generated {len(prioritized)} total suggestions")
+        logger.info(
+            f"Generated {len(prioritized)} total suggestions",
+            extra={
+                'agent': 'MaintainerAgent',
+                'event': 'generate_suggestions_complete',
+                'metrics': {'total_suggestions': len(prioritized)}
+            }
+        )
         
         return prioritized
     
@@ -112,6 +163,9 @@ class MaintainerAgent:
         Returns:
             List of MaintenanceSuggestion objects
         """
+        metrics = get_metrics_collector()
+        start_time = time.time()
+        
         # Prepare context for LLM
         context = self._prepare_suggestion_context(profile, user_preferences)
         
@@ -122,13 +176,48 @@ class MaintainerAgent:
             # Call LLM for suggestion generation
             response = self.model.generate_content(prompt)
             
+            # Record token usage if available
+            if hasattr(response, 'usage_metadata'):
+                usage = response.usage_metadata
+                metrics.record_token_usage(
+                    'gemini-1.5-flash',
+                    usage.prompt_token_count,
+                    usage.candidates_token_count
+                )
+            
+            duration_ms = (time.time() - start_time) * 1000
+            metrics.record_api_call('gemini', 'generate_suggestions', duration_ms, success=True)
+            
             # Parse LLM response
             suggestions = self._parse_suggestion_response(response.text, profile)
+            
+            logger.debug(
+                f"LLM generated {len(suggestions)} suggestions for {profile.repository.full_name}",
+                extra={
+                    'agent': 'MaintainerAgent',
+                    'event': 'llm_suggestions_generated',
+                    'repository': profile.repository.full_name,
+                    'metrics': {'duration_ms': duration_ms, 'suggestion_count': len(suggestions)}
+                }
+            )
             
             return suggestions
             
         except Exception as e:
-            logger.error(f"Failed to generate suggestions via LLM: {e}")
+            duration_ms = (time.time() - start_time) * 1000
+            metrics.record_api_call('gemini', 'generate_suggestions', duration_ms, success=False, error=str(e))
+            metrics.record_error('llm_error')
+            metrics.record_recovery('fallback_suggestions')
+            
+            logger.error(
+                f"Failed to generate suggestions via LLM: {e}",
+                extra={
+                    'agent': 'MaintainerAgent',
+                    'event': 'llm_suggestions_error',
+                    'repository': profile.repository.full_name,
+                    'extra_data': {'error': str(e), 'using_fallback': True}
+                }
+            )
             # Fallback to rule-based suggestions
             return self._fallback_suggestions(profile)
     

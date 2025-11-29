@@ -5,6 +5,7 @@ health assessments and compact repository profiles.
 """
 
 import logging
+import time
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -17,6 +18,7 @@ from ..models.health import HealthSnapshot, RepositoryProfile
 from ..tools.github_tools import get_repo_overview, get_repo_history
 from ..tools.github_client import GitHubClient, RepositoryNotFoundError, GitHubAPIError
 from ..config import get_config
+from ..observability import get_metrics_collector
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +84,17 @@ class AnalyzerAgent:
             RepositoryNotFoundError: If repository doesn't exist
             GitHubAPIError: If API request fails
         """
-        logger.info(f"Analyzing repository: {repo.full_name}")
+        metrics = get_metrics_collector()
+        start_time = time.time()
+        
+        logger.info(
+            f"Analyzing repository: {repo.full_name}",
+            extra={
+                'agent': 'AnalyzerAgent',
+                'event': 'analyze_repository_start',
+                'repository': repo.full_name
+            }
+        )
         
         try:
             # Fetch repository data
@@ -95,7 +107,22 @@ class AnalyzerAgent:
             # Create repository profile
             profile = self.create_repository_profile(repo, overview, history, health)
             
-            logger.info(f"Successfully analyzed {repo.full_name}")
+            duration_ms = (time.time() - start_time) * 1000
+            metrics.record_analysis_duration(repo.full_name, duration_ms, success=True)
+            
+            logger.info(
+                f"Successfully analyzed {repo.full_name}",
+                extra={
+                    'agent': 'AnalyzerAgent',
+                    'event': 'analyze_repository_complete',
+                    'repository': repo.full_name,
+                    'metrics': {
+                        'duration_ms': duration_ms,
+                        'health_score': health.overall_health_score,
+                        'issues_found': len(health.issues_identified)
+                    }
+                }
+            )
             
             return RepositoryAnalysis(
                 repository=repo,
@@ -106,13 +133,49 @@ class AnalyzerAgent:
             )
             
         except RepositoryNotFoundError:
-            logger.error(f"Repository not found: {repo.full_name}")
+            duration_ms = (time.time() - start_time) * 1000
+            metrics.record_analysis_duration(repo.full_name, duration_ms, success=False, error='not_found')
+            metrics.record_error('repository_not_found')
+            
+            logger.error(
+                f"Repository not found: {repo.full_name}",
+                extra={
+                    'agent': 'AnalyzerAgent',
+                    'event': 'analyze_repository_error',
+                    'repository': repo.full_name
+                }
+            )
             raise
         except GitHubAPIError as e:
-            logger.error(f"Failed to analyze {repo.full_name}: {e}")
+            duration_ms = (time.time() - start_time) * 1000
+            metrics.record_analysis_duration(repo.full_name, duration_ms, success=False, error=str(e))
+            metrics.record_error('github_api_error')
+            
+            logger.error(
+                f"Failed to analyze {repo.full_name}: {e}",
+                extra={
+                    'agent': 'AnalyzerAgent',
+                    'event': 'analyze_repository_error',
+                    'repository': repo.full_name,
+                    'extra_data': {'error': str(e)}
+                }
+            )
             raise
         except Exception as e:
-            logger.error(f"Unexpected error analyzing {repo.full_name}: {e}")
+            duration_ms = (time.time() - start_time) * 1000
+            metrics.record_analysis_duration(repo.full_name, duration_ms, success=False, error=str(e))
+            metrics.record_error('unexpected_error')
+            
+            logger.error(
+                f"Unexpected error analyzing {repo.full_name}: {e}",
+                extra={
+                    'agent': 'AnalyzerAgent',
+                    'event': 'analyze_repository_error',
+                    'repository': repo.full_name,
+                    'extra_data': {'error': str(e)}
+                },
+                exc_info=True
+            )
             raise
     
     def analyze_repositories_parallel(
@@ -176,7 +239,17 @@ class AnalyzerAgent:
         Returns:
             HealthSnapshot with health assessment
         """
-        logger.info(f"Generating health snapshot for {overview.repository.full_name}")
+        metrics = get_metrics_collector()
+        start_time = time.time()
+        
+        logger.info(
+            f"Generating health snapshot for {overview.repository.full_name}",
+            extra={
+                'agent': 'AnalyzerAgent',
+                'event': 'generate_health_snapshot_start',
+                'repository': overview.repository.full_name
+            }
+        )
         
         # Prepare compact context for LLM
         context = self._prepare_health_context(overview, history)
@@ -188,18 +261,53 @@ class AnalyzerAgent:
             # Call LLM for health assessment
             response = self.model.generate_content(prompt)
             
+            # Record token usage if available
+            if hasattr(response, 'usage_metadata'):
+                usage = response.usage_metadata
+                metrics.record_token_usage(
+                    'gemini-1.5-flash',
+                    usage.prompt_token_count,
+                    usage.candidates_token_count
+                )
+            
+            duration_ms = (time.time() - start_time) * 1000
+            metrics.record_api_call('gemini', 'generate_health_snapshot', duration_ms, success=True)
+            
             # Parse LLM response
             health = self._parse_health_response(response.text, overview, history)
             
             logger.info(
                 f"Health snapshot generated for {overview.repository.full_name}: "
-                f"score={health.overall_health_score:.2f}"
+                f"score={health.overall_health_score:.2f}",
+                extra={
+                    'agent': 'AnalyzerAgent',
+                    'event': 'generate_health_snapshot_complete',
+                    'repository': overview.repository.full_name,
+                    'metrics': {
+                        'duration_ms': duration_ms,
+                        'health_score': health.overall_health_score,
+                        'activity_level': health.activity_level
+                    }
+                }
             )
             
             return health
             
         except Exception as e:
-            logger.error(f"Failed to generate health snapshot: {e}")
+            duration_ms = (time.time() - start_time) * 1000
+            metrics.record_api_call('gemini', 'generate_health_snapshot', duration_ms, success=False, error=str(e))
+            metrics.record_error('llm_error')
+            metrics.record_recovery('fallback_health_assessment')
+            
+            logger.error(
+                f"Failed to generate health snapshot: {e}",
+                extra={
+                    'agent': 'AnalyzerAgent',
+                    'event': 'generate_health_snapshot_error',
+                    'repository': overview.repository.full_name,
+                    'extra_data': {'error': str(e), 'using_fallback': True}
+                }
+            )
             # Fallback to rule-based assessment
             return self._fallback_health_assessment(overview, history)
     

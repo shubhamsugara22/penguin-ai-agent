@@ -19,6 +19,7 @@ from ..memory.memory_bank import MemoryBank
 from .analyzer import AnalyzerAgent, RepositoryAnalysis
 from .maintainer import MaintainerAgent
 from ..config import get_config
+from ..observability import get_metrics_collector
 
 logger = logging.getLogger(__name__)
 
@@ -213,7 +214,21 @@ class CoordinatorAgent:
         Returns:
             AnalysisResult with complete analysis results
         """
-        logger.info(f"Starting repository analysis for user: {username}")
+        metrics = get_metrics_collector()
+        metrics.start_session()
+        
+        logger.info(
+            f"Starting repository analysis for user: {username}",
+            extra={
+                'agent': 'CoordinatorAgent',
+                'event': 'workflow_start',
+                'extra_data': {
+                    'username': username,
+                    'has_filters': filters is not None,
+                    'has_preferences': user_preferences is not None
+                }
+            }
+        )
         
         # Load user preferences from memory if not provided
         if user_preferences is None:
@@ -234,7 +249,14 @@ class CoordinatorAgent:
         # Execute workflow steps sequentially
         try:
             for step in self.workflow:
-                logger.debug(f"Executing workflow step: {step.__name__}")
+                logger.debug(
+                    f"Executing workflow step: {step.__name__}",
+                    extra={
+                        'agent': 'CoordinatorAgent',
+                        'event': 'workflow_step',
+                        'extra_data': {'step': step.__name__}
+                    }
+                )
                 state = step(state)
             
             # Get session
@@ -251,16 +273,33 @@ class CoordinatorAgent:
                 errors=state.errors
             )
             
+            # Get metrics summary
+            metrics_summary = metrics.get_session_summary()
+            
             logger.info(
                 f"Analysis complete: {len(result.repositories_analyzed)} repos, "
                 f"{len(result.suggestions)} suggestions, "
-                f"{len(result.issues_created)} issues created"
+                f"{len(result.issues_created)} issues created",
+                extra={
+                    'agent': 'CoordinatorAgent',
+                    'event': 'workflow_complete',
+                    'metrics': metrics_summary
+                }
             )
             
             return result
             
         except Exception as e:
-            logger.error(f"Workflow execution failed: {e}")
+            metrics.record_error('workflow_error')
+            logger.error(
+                f"Workflow execution failed: {e}",
+                extra={
+                    'agent': 'CoordinatorAgent',
+                    'event': 'workflow_error',
+                    'extra_data': {'error': str(e)}
+                },
+                exc_info=True
+            )
             raise
     
     def _initialize_session_node(self, state: WorkflowState) -> WorkflowState:

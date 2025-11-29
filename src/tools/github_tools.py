@@ -1,6 +1,7 @@
 """GitHub API tools for repository analysis and issue management."""
 
 import logging
+import time
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 import re
@@ -8,6 +9,7 @@ import re
 from .github_client import GitHubClient, RepositoryNotFoundError, GitHubAPIError
 from ..models.repository import Repository, RepositoryOverview, RepositoryHistory, CommitSummary
 from ..models.maintenance import IssueResult
+from ..observability import get_metrics_collector
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +59,16 @@ def list_repos(
     if client is None:
         client = GitHubClient()
     
-    logger.info(f"Fetching repositories for user: {username}")
+    metrics = get_metrics_collector()
+    start_time = time.time()
+    
+    logger.info(
+        f"Fetching repositories for user: {username}",
+        extra={
+            'event': 'list_repos_start',
+            'extra_data': {'username': username, 'has_filters': filters is not None}
+        }
+    )
     
     try:
         # Fetch repositories
@@ -68,6 +79,10 @@ def list_repos(
         }
         
         repos_data = client.get_paginated(f'/users/{username}/repos', params=params)
+        
+        # Record API call
+        duration_ms = (time.time() - start_time) * 1000
+        metrics.record_api_call('github', 'list_repos', duration_ms, success=True)
         
         # Convert to Repository objects
         repositories = []
@@ -84,11 +99,31 @@ def list_repos(
                 logger.warning(f"Failed to parse repository {repo_data.get('full_name')}: {e}")
                 continue
         
-        logger.info(f"Found {len(repositories)} repositories for {username}")
+        logger.info(
+            f"Found {len(repositories)} repositories for {username}",
+            extra={
+                'event': 'list_repos_complete',
+                'extra_data': {
+                    'username': username,
+                    'repo_count': len(repositories),
+                    'duration_ms': duration_ms
+                }
+            }
+        )
         return repositories
         
     except GitHubAPIError as e:
-        logger.error(f"Failed to fetch repositories for {username}: {e}")
+        duration_ms = (time.time() - start_time) * 1000
+        metrics.record_api_call('github', 'list_repos', duration_ms, success=False, error=str(e))
+        metrics.record_error('github_api_error')
+        
+        logger.error(
+            f"Failed to fetch repositories for {username}: {e}",
+            extra={
+                'event': 'list_repos_error',
+                'extra_data': {'username': username, 'error': str(e)}
+            }
+        )
         raise
 
 
@@ -112,7 +147,13 @@ def get_repo_overview(
     if client is None:
         client = GitHubClient()
     
-    logger.info(f"Fetching overview for repository: {repo_full_name}")
+    metrics = get_metrics_collector()
+    start_time = time.time()
+    
+    logger.info(
+        f"Fetching overview for repository: {repo_full_name}",
+        extra={'event': 'get_repo_overview_start', 'repository': repo_full_name}
+    )
     
     try:
         # Fetch basic repository info
@@ -147,14 +188,43 @@ def get_repo_overview(
             has_contributing=has_contributing
         )
         
-        logger.info(f"Successfully fetched overview for {repo_full_name}")
+        duration_ms = (time.time() - start_time) * 1000
+        metrics.record_api_call('github', 'get_repo_overview', duration_ms, success=True)
+        
+        logger.info(
+            f"Successfully fetched overview for {repo_full_name}",
+            extra={
+                'event': 'get_repo_overview_complete',
+                'repository': repo_full_name,
+                'extra_data': {
+                    'has_readme': readme_content is not None,
+                    'has_tests': has_tests,
+                    'has_ci': has_ci_config,
+                    'duration_ms': duration_ms
+                }
+            }
+        )
         return overview
         
     except RepositoryNotFoundError:
-        logger.error(f"Repository not found: {repo_full_name}")
+        duration_ms = (time.time() - start_time) * 1000
+        metrics.record_api_call('github', 'get_repo_overview', duration_ms, success=False, error='not_found')
+        metrics.record_error('repository_not_found')
+        
+        logger.error(
+            f"Repository not found: {repo_full_name}",
+            extra={'event': 'get_repo_overview_error', 'repository': repo_full_name}
+        )
         raise
     except GitHubAPIError as e:
-        logger.error(f"Failed to fetch overview for {repo_full_name}: {e}")
+        duration_ms = (time.time() - start_time) * 1000
+        metrics.record_api_call('github', 'get_repo_overview', duration_ms, success=False, error=str(e))
+        metrics.record_error('github_api_error')
+        
+        logger.error(
+            f"Failed to fetch overview for {repo_full_name}: {e}",
+            extra={'event': 'get_repo_overview_error', 'repository': repo_full_name, 'extra_data': {'error': str(e)}}
+        )
         raise
 
 
@@ -273,7 +343,17 @@ def create_issue(
     if client is None:
         client = GitHubClient()
     
-    logger.info(f"Creating issue in {repo_full_name}: {title}")
+    metrics = get_metrics_collector()
+    start_time = time.time()
+    
+    logger.info(
+        f"Creating issue in {repo_full_name}: {title}",
+        extra={
+            'event': 'create_issue_start',
+            'repository': repo_full_name,
+            'extra_data': {'title': title, 'labels': labels}
+        }
+    )
     
     try:
         issue_data = {
@@ -293,11 +373,37 @@ def create_issue(
             issue_number=issue_number
         )
         
-        logger.info(f"Successfully created issue #{issue_number} in {repo_full_name}")
+        duration_ms = (time.time() - start_time) * 1000
+        metrics.record_api_call('github', 'create_issue', duration_ms, success=True)
+        metrics.record_issue_created()
+        
+        logger.info(
+            f"Successfully created issue #{issue_number} in {repo_full_name}",
+            extra={
+                'event': 'create_issue_complete',
+                'repository': repo_full_name,
+                'extra_data': {
+                    'issue_number': issue_number,
+                    'issue_url': issue_url,
+                    'duration_ms': duration_ms
+                }
+            }
+        )
         return result
         
     except GitHubAPIError as e:
-        logger.error(f"Failed to create issue in {repo_full_name}: {e}")
+        duration_ms = (time.time() - start_time) * 1000
+        metrics.record_api_call('github', 'create_issue', duration_ms, success=False, error=str(e))
+        metrics.record_error('github_api_error')
+        
+        logger.error(
+            f"Failed to create issue in {repo_full_name}: {e}",
+            extra={
+                'event': 'create_issue_error',
+                'repository': repo_full_name,
+                'extra_data': {'title': title, 'error': str(e)}
+            }
+        )
         return IssueResult(
             success=False,
             issue_url='',
