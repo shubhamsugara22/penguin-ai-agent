@@ -86,7 +86,95 @@ penguin-ai-agent/
 
 ## Usage
 
-Coming soon - CLI interface under development.
+The GitHub Maintainer Agent provides a command-line interface for analyzing repositories and generating maintenance suggestions.
+
+### Basic Usage
+
+Analyze all repositories for a GitHub user:
+```bash
+python main.py analyze <username>
+```
+
+### Advanced Options
+
+**Filter repositories:**
+```bash
+# Filter by programming language
+python main.py analyze <username> --language Python
+
+# Filter by last update date
+python main.py analyze <username> --updated-after 2024-01-01
+
+# Filter by visibility
+python main.py analyze <username> --visibility public
+
+# Exclude archived repositories (default behavior)
+python main.py analyze <username> --no-archived
+```
+
+**Customize behavior:**
+```bash
+# Auto-approve all suggestions (skip manual approval)
+python main.py analyze <username> --automation auto
+
+# Specify focus areas
+python main.py analyze <username> --focus tests,docs,security
+
+# Exclude specific repositories
+python main.py analyze <username> --exclude repo1,repo2
+
+# Add preferred labels to created issues
+python main.py analyze <username> --labels bug,enhancement
+```
+
+**Combine options:**
+```bash
+python main.py analyze <username> \
+  --language Python \
+  --updated-after 2024-11-01 \
+  --focus tests,ci-cd \
+  --automation manual
+```
+
+### Command Reference
+
+```
+python main.py analyze <username> [OPTIONS]
+
+Repository Filters:
+  --language LANG          Filter by programming language
+  --updated-after DATE     Filter by last update (YYYY-MM-DD)
+  --visibility TYPE        Filter by visibility (public/private/all)
+  --archived              Include archived repositories
+  --no-archived           Exclude archived repositories
+
+User Preferences:
+  --automation LEVEL      Automation level (auto/manual/ask)
+  --labels LABELS         Comma-separated preferred labels
+  --exclude REPOS         Comma-separated repos to exclude
+  --focus AREAS           Comma-separated focus areas
+
+Logging:
+  --log-level LEVEL       Set logging level (DEBUG/INFO/WARNING/ERROR)
+  --quiet                 Suppress progress output
+```
+
+### Example Workflows
+
+**Quick analysis with auto-approval:**
+```bash
+python main.py analyze myusername --automation auto
+```
+
+**Focused security audit:**
+```bash
+python main.py analyze myusername --focus security --language Python
+```
+
+**Recent repositories only:**
+```bash
+python main.py analyze myusername --updated-after 2024-11-01 --no-archived
+```
 
 ## Testing
 
