@@ -64,7 +64,15 @@ penguin-ai-agent/
 │   ├── memory/          # Session and long-term memory
 │   ├── config.py        # Configuration management
 │   └── logging_config.py # Structured logging setup
+├── evaluation/          # Evaluation framework
+│   ├── test_dataset.py  # Test repository dataset
+│   ├── evaluators.py    # Quality, completeness, and deduplication evaluators
+│   ├── runner.py        # Evaluation orchestration
+│   └── README.md        # Evaluation documentation
 ├── tests/               # Test suite
+├── examples/            # Example scripts and demos
+├── docs/                # Documentation
+├── run_evaluation.py    # Evaluation runner script
 ├── pyproject.toml       # Project metadata and dependencies
 ├── requirements.txt     # Dependency list
 └── .env.example         # Environment variable template
@@ -85,6 +93,25 @@ Run with coverage:
 ```bash
 pytest --cov=src --cov-report=html
 ```
+
+## Evaluation
+
+The project includes a comprehensive evaluation framework for assessing agent performance:
+
+```bash
+# Run complete evaluation suite
+python run_evaluation.py
+
+# Run evaluation demo
+python examples/evaluation_demo.py
+```
+
+The evaluation framework assesses:
+- **Suggestion Quality**: LLM-as-judge evaluation of generated suggestions
+- **Analysis Completeness**: Verification of repository analysis accuracy
+- **Deduplication Accuracy**: Testing duplicate suggestion prevention
+
+For detailed documentation, see [docs/EVALUATION.md](docs/EVALUATION.md)
 
 ## Development
 
