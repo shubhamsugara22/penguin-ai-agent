@@ -1,0 +1,36 @@
+{
+  "repository": {
+    "name": "test-repo",
+    "full_name": "test-user/test-repo",
+    "owner": "test-user",
+    "url": "https://github.com/test-user/test-repo",
+    "default_branch": "main",
+    "visibility": "public",
+    "created_at": "2023-01-01T00:00:00",
+    "updated_at": "2024-01-01T00:00:00"
+  },
+  "purpose": "A test repository for demonstration",
+  "tech_stack": [
+    "Python",
+    "JavaScript"
+  ],
+  "key_files": [
+    "README.md",
+    "setup.py",
+    "package.json"
+  ],
+  "health": {
+    "activity_level": "moderate",
+    "test_coverage": "none",
+    "documentation_quality": "basic",
+    "ci_cd_status": "missing",
+    "dependency_status": "unknown",
+    "overall_health_score": 0.45,
+    "issues_identified": [
+      "No tests detected",
+      "No CI/CD configuration"
+    ]
+  },
+  "last_analyzed": "2025-11-29T19:45:13.773675",
+  "analysis_version": "1.0.0"
+}

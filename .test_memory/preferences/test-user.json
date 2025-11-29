@@ -1,0 +1,16 @@
+{
+  "user_id": "test-user",
+  "automation_level": "auto",
+  "preferred_labels": [
+    "bug",
+    "enhancement"
+  ],
+  "excluded_repos": [
+    "repo1",
+    "repo2"
+  ],
+  "focus_areas": [
+    "tests",
+    "security"
+  ]
+}
