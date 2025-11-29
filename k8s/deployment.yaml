@@ -1,0 +1,151 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: github-maintainer-agent
+  namespace: default
+  labels:
+    app: github-maintainer-agent
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: github-maintainer-agent
+  template:
+    metadata:
+      labels:
+        app: github-maintainer-agent
+        version: v1
+    spec:
+      serviceAccountName: github-maintainer-agent
+      
+      # Security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      
+      containers:
+      - name: agent
+        image: gcr.io/YOUR_PROJECT_ID/github-maintainer-agent:latest
+        imagePullPolicy: Always
+        
+        # Command override for Kubernetes
+        command: ["python", "main.py"]
+        args: ["analyze", "$(USERNAME)", "--automation", "auto"]
+        
+        # Environment variables
+        env:
+        - name: USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: agent-config
+              key: username
+        
+        - name: GITHUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: github-credentials
+              key: token
+        
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: gemini-credentials
+              key: api-key
+        
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: agent-config
+              key: log-level
+              optional: true
+        
+        - name: MAX_PARALLEL_REPOS
+          valueFrom:
+            configMapKeyRef:
+              name: agent-config
+              key: max-parallel-repos
+              optional: true
+        
+        # Resource limits
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+        
+        # Volume mounts
+        volumeMounts:
+        - name: memory-storage
+          mountPath: /app/memory_bank
+        
+        - name: logs
+          mountPath: /app/logs
+        
+        # Liveness probe
+        livenessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - "import sys; sys.exit(0)"
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        # Readiness probe
+        readinessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - "import sys; sys.exit(0)"
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+      
+      # Volumes
+      volumes:
+      - name: memory-storage
+        persistentVolumeClaim:
+          claimName: agent-memory-pvc
+      
+      - name: logs
+        emptyDir: {}
+      
+      # Restart policy
+      restartPolicy: Always
+      
+      # Node selector (optional)
+      # nodeSelector:
+      #   workload-type: agent
+      
+      # Tolerations (optional)
+      # tolerations:
+      # - key: "agent-workload"
+      #   operator: "Equal"
+      #   value: "true"
+      #   effect: "NoSchedule"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: github-maintainer-agent
+  namespace: default
+  labels:
+    app: github-maintainer-agent
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: github-maintainer-agent

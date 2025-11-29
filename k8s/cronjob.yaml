@@ -1,0 +1,118 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: github-maintainer-weekly
+  namespace: default
+  labels:
+    app: github-maintainer-agent
+spec:
+  # Schedule: Every Monday at 9 AM
+  schedule: "0 9 * * 1"
+  
+  # Timezone (requires Kubernetes 1.25+)
+  # timeZone: "America/New_York"
+  
+  # Job history limits
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  
+  # Concurrency policy
+  concurrencyPolicy: Forbid
+  
+  jobTemplate:
+    metadata:
+      labels:
+        app: github-maintainer-agent
+        job-type: scheduled
+    spec:
+      # Job timeout
+      activeDeadlineSeconds: 3600
+      
+      # Backoff limit
+      backoffLimit: 2
+      
+      template:
+        metadata:
+          labels:
+            app: github-maintainer-agent
+            job-type: scheduled
+        spec:
+          serviceAccountName: github-maintainer-agent
+          
+          # Security context
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            fsGroup: 1000
+          
+          restartPolicy: OnFailure
+          
+          containers:
+          - name: agent
+            image: gcr.io/YOUR_PROJECT_ID/github-maintainer-agent:latest
+            imagePullPolicy: Always
+            
+            # Command for scheduled analysis
+            command: ["python", "main.py"]
+            args:
+            - "analyze"
+            - "$(USERNAME)"
+            - "--automation"
+            - "auto"
+            - "--log-level"
+            - "INFO"
+            
+            # Environment variables
+            env:
+            - name: USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: agent-config
+                  key: username
+            
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: github-credentials
+                  key: token
+            
+            - name: GEMINI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: gemini-credentials
+                  key: api-key
+            
+            - name: LOG_LEVEL
+              value: "INFO"
+            
+            - name: MAX_PARALLEL_REPOS
+              valueFrom:
+                configMapKeyRef:
+                  name: agent-config
+                  key: max-parallel-repos
+            
+            # Resource limits
+            resources:
+              requests:
+                memory: "512Mi"
+                cpu: "500m"
+              limits:
+                memory: "2Gi"
+                cpu: "2000m"
+            
+            # Volume mounts
+            volumeMounts:
+            - name: memory-storage
+              mountPath: /app/memory_bank
+            
+            - name: logs
+              mountPath: /app/logs
+          
+          # Volumes
+          volumes:
+          - name: memory-storage
+            persistentVolumeClaim:
+              claimName: agent-memory-pvc
+          
+          - name: logs
+            emptyDir: {}

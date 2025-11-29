@@ -1,0 +1,81 @@
+# Git
+.git
+.gitignore
+.github
+
+# Kiro
+.kiro/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# Environment variables
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.hypothesis/
+tests/
+
+# Documentation
+docs/
+*.md
+!ReadME.md
+
+# Logs
+*.log
+logs/
+
+# Memory storage (will be mounted as volume)
+memory_bank/
+*.json.bak
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# CI/CD
+.github/
+
+# Examples and verification scripts
+examples/
+verify_*.py
+test_*.py
+run_*.py

@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agent-config
+  namespace: default
+  labels:
+    app: github-maintainer-agent
+data:
+  # GitHub username to analyze
+  username: "myusername"
+  
+  # Logging configuration
+  log-level: "INFO"
+  
+  # Performance configuration
+  max-parallel-repos: "5"
+  
+  # GitHub API base URL (optional)
+  github-api-base-url: "https://api.github.com"
+  
+  # Automation level (auto, manual, ask)
+  automation-level: "manual"
+  
+  # Repository filters (optional)
+  # filter-language: "Python"
+  # filter-updated-after: "2024-01-01"
+  # filter-visibility: "public"

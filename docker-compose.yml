@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  github-maintainer-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: github-maintainer-agent:latest
+    container_name: github-maintainer-agent
+    environment:
+      # GitHub API Configuration
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      
+      # Gemini API Configuration
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      
+      # Logging Configuration
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      
+      # Performance Configuration
+      - MAX_PARALLEL_REPOS=${MAX_PARALLEL_REPOS:-5}
+      
+      # GitHub API Base URL (optional)
+      - GITHUB_API_BASE_URL=${GITHUB_API_BASE_URL:-https://api.github.com}
+    
+    volumes:
+      # Mount memory storage for persistence
+      - ./memory_bank:/app/memory_bank
+      
+      # Mount logs directory
+      - ./logs:/app/logs
+      
+      # Optional: Mount custom configuration
+      # - ./config:/app/config
+    
+    # Override command for interactive use
+    # Uncomment and modify as needed
+    # command: analyze myusername --automation manual
+    
+    # For interactive approval workflow
+    stdin_open: true
+    tty: true
+    
+    # Resource limits (adjust based on your needs)
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 512M
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Network configuration
+    networks:
+      - agent-network
+
+networks:
+  agent-network:
+    driver: bridge
+
+volumes:
+  memory_bank:
+    driver: local
+  logs:
+    driver: local
